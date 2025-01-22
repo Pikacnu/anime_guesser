@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Guesser</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #8d8d8d;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background-color: black;
+      height: 50vh;
+    }
+
+    #nextButton {
+      display: block;
+      margin: 20px auto;
+    }
+
+    #optionContainer {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      all: unset;
+      padding: 10px;
+      margin: 10px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+      color: black;
+    }
+
+    button:hover {
+      background-color: #e0e0e0;
+    }
+
+    button.wrong:hover {
+      background-color: #ad3030;
+    }
+
+    button.correct:hover {
+      background-color: #30ad30;
+    }
+
+    .wrong {
+      background-color: #ad3030;
+    }
+
+    .correct {
+      background-color: #30ad30;
+    }
+
+    #endPopup {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40vw;
+      height: 25vh;
+      padding: 20px;
+      color: white;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.75);
+      z-index: 100;
+      border-radius: 10px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="posterCanvas"></canvas>
+
+  <div class="optionContainer" id="optionContainer"></div>
+  <div id="endPopup" style="display: none;">
+    <h1>Game Over</h1>
+    <button id="restartButton">Restart</button>
+    <div class="displayContainer">
+      <p id="triedCount"></p>
+      <p id="openPercent"></p>
+      <p id="time"></p>
+    </div>
+  </div>
+  <script>
+    async function init() {
+      const start = Date.now();
+      const rows = $rows$;
+      const cols = $cols$;
+
+      const canvas = document.getElementById('posterCanvas');
+      const optionContainer = document.getElementById('optionContainer');
+
+      const ctx = canvas.getContext('2d');
+      const image = new Image();
+
+      let cells = [];
+
+      image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        const cellWidth = image.width / cols;
+        const cellHeight = image.height / rows;
+
+        // Create an array of cell positions
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            cells.push({ row, col });
+          }
+        }
+
+        // Shuffle the cells array
+        for (let i = cells.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [cells[i], cells[j]] = [cells[j], cells[i]];
+        }
+
+        let currentIndex = 0;
+
+        const drawNextCell = () => {
+          if (currentIndex < cells.length) {
+            const { row, col } = cells[currentIndex];
+            ctx.drawImage(
+              image,
+              col * cellWidth,
+              row * cellHeight,
+              cellWidth,
+              cellHeight,
+              col * cellWidth,
+              row * cellHeight,
+              cellWidth,
+              cellHeight
+            );
+            currentIndex++;
+          }
+        };
+        InitOptions(drawNextCell);
+      };
+
+      const response = await fetch('/data?count=$questions$');
+      const data = await response.json();
+      const options = data.data
+      const answer = data.answer;
+      image.src = answer.cover;
+
+      const total = rows * cols;
+      const length = options.length + 1;
+      const BlockCountsByBlock = Array.from({ length }, (_, i) => Math.round((i + 1) * (2 / (length * (length + 1)) * total)));
+      let clickCounts = 0;
+
+      function showEndPopup() {
+        const endPopup = document.getElementById('endPopup');
+        const restartButton = document.getElementById('restartButton');
+        const triedCount = document.getElementById('triedCount');
+        const openPercent = document.getElementById('openPercent');
+        const time = document.getElementById('time');
+        const end = Date.now();
+        endPopup.style.display = 'flex';
+        restartButton.addEventListener('click', () => {
+          location.reload();
+        });
+        triedCount.textContent = `Tried: ${clickCounts} times / ${BlockCountsByBlock.length}`;
+        openPercent.textContent = `Open: ${Math.round((clickCounts / BlockCountsByBlock.length) * 100)}%`;
+        time.textContent = `Time: ${Math.round((end - start) / 1000)}s`;
+      }
+
+      async function InitOptions(drawNextCell) {
+        new Array(BlockCountsByBlock[clickCounts]).fill(0).forEach(() => drawNextCell());
+        options.map((option, index) => {
+          const button = document.createElement('button');
+          button.textContent = option.title;
+          button.addEventListener('click', (event) => {
+            clickCounts++;
+            if (option.title === answer.title) {
+              button.classList.add('correct');
+              new Array(rows * cols).fill(0).forEach(() => drawNextCell());
+              showEndPopup();
+            } else {
+              button.classList.add('wrong');
+              button.disabled = true;
+              new Array(BlockCountsByBlock[clickCounts]).fill(0).forEach(() => drawNextCell());
+            }
+          })
+          optionContainer.appendChild(button);
+        });
+      }
+
+    }
+    init();
+  </script>
+</body>
+
+</html>

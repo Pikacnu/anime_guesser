@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Documentation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h1,
+    h2 {
+      color: #333;
+    }
+
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border: 1px solid #ddd;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>API Documentation</h1>
+  <h2>Endpoints</h2>
+  <h3>GET /</h3>
+  <p>Returns the main HTML page with customizable parameters.</p>
+  <pre>
+    Parameters:
+    - rows: Number of rows (default: 10)
+    - cols: Number of columns (default: 10)
+    - questions: Number of questions (default: 20)
+  </pre>
+
+  <h3>GET /data</h3>
+  <p>Returns a list of random anime data with one randomly selected answer.</p>
+  <pre>
+    Parameters:
+    - count: Number of anime records to return (default: 10)
+  </pre>
+
+  <h3>GET /api/animes</h3>
+  <p>Returns a list of all animes in the database.</p>
+
+  <h3>POST /api/animes</h3>
+  <p>Adds a new anime to the database.</p>
+  <pre>
+    Body:
+    {
+      "title": "Anime Title",
+      "cover": "Cover URL"
+    }
+  </pre>
+
+  <h3>DELETE /api/animes</h3>
+  <p>Deletes an anime from the database by ID or title.</p>
+  <pre>
+    Body (by ID):
+    {
+      "id": animeId
+    }
+
+    Body (by title):
+    {
+      "title": "Anime Title"
+    }
+  </pre>
+
+  <h3>GET /api/random</h3>
+  <p>Returns a shuffled list of random animes.</p>
+  <pre>
+    Parameters:
+    - count: Number of anime records to return (default: 10)
+  </pre>
+
+  <h3>GET /api/tool</h3>
+  <p>Returns the tools HTML page.</p>
+
+  <h3>GET /api</h3>
+  <p>Returns the API documentation HTML page.</p>
+</body>
+
+</html>

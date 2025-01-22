@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Tools</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    form {
+      background: #f4f4f4;
+      padding: 20px;
+      border: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+    }
+
+    input[type="submit"] {
+      padding: 10px 20px;
+      background: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Add New Anime</h1>
+  <form id="addAnimeForm">
+    <label for="title">Anime Title:</label>
+    <input type="text" id="title" name="title" required>
+
+    <label for="cover">Cover URL:</label>
+    <input type="text" id="cover" name="cover" required>
+
+    <input type="submit" value="Add Anime">
+  </form>
+
+  <h1>Delete Anime</h1>
+  <form id="deleteAnimeForm">
+    <label for="deleteTitle">Anime Title:</label>
+    <input type="text" id="deleteTitle" name="deleteTitle" required>
+
+    <input type="submit" value="Delete Anime">
+  </form>
+
+  <script>
+    document.getElementById('addAnimeForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById('title').value;
+      const cover = document.getElementById('cover').value;
+
+      fetch('/api/animes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title, cover })
+      })
+        .then(response => {
+          if (response.status === 201) {
+            alert('Anime added successfully!');
+            document.getElementById('addAnimeForm').reset();
+          } else {
+            alert('Failed to add anime.');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to add anime.');
+        });
+    });
+
+    document.getElementById('deleteAnimeForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById('deleteTitle').value;
+      console.log(title);
+
+      fetch(`/api/animes`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ title: title })
+      })
+        .then(response => {
+          if (response.status === 200) {
+            alert('Anime deleted successfully!');
+            document.getElementById('deleteAnimeForm').reset();
+          } else {
+            alert('Failed to delete anime.');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Failed to delete anime.');
+        });
+    });
+  </script>
+</body>
+
+</html>
