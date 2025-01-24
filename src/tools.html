@@ -15,109 +15,349 @@
       color: #333;
     }
 
-    form {
-      background: #f4f4f4;
-      padding: 20px;
-      border: 1px solid #ddd;
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    input[type="text"] {
+    table {
       width: 100%;
-      padding: 8px;
+      border-collapse: collapse;
       margin-bottom: 20px;
-      border: 1px solid #ddd;
     }
 
-    input[type="submit"] {
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .controls label {
+      margin-right: 10px;
+      max-width: 40vw;
+    }
+
+    .controls input {
+      margin-right: 10px;
+    }
+
+    .controls button {
       padding: 10px 20px;
       background: #333;
       color: #fff;
       border: none;
       cursor: pointer;
     }
+
+    .controls button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
 <body>
-  <h1>Add New Anime</h1>
-  <form id="addAnimeForm">
-    <label for="title">Anime Title:</label>
-    <input type="text" id="title" name="title" required>
-
-    <label for="cover">Cover URL:</label>
-    <input type="text" id="cover" name="cover" required>
-
-    <input type="submit" value="Add Anime">
-  </form>
-
-  <h1>Delete Anime</h1>
-  <form id="deleteAnimeForm">
-    <label for="deleteTitle">Anime Title:</label>
-    <input type="text" id="deleteTitle" name="deleteTitle" required>
-
-    <input type="submit" value="Delete Anime">
-  </form>
+  <h1>Anime List</h1>
+  <div class="controls">
+    <label for="itemsPerPage">Items per page:</label>
+    <input type="number" id="itemsPerPage" value="10" min="1">
+    <label for="searchInput">Search:</label>
+    <input type="text" id="searchInput" placeholder="Search by title">
+    <p id="progess"></p>
+    <button id="prevPage" disabled>Previous</button>
+    <button id="nextPage">Next</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Original Title</th>
+        <th>Language</th>
+        <th>Translation</th>
+        <th>Cover URL</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="animeList">
+      <tr>
+        <td><input type="text" id="newTitle" placeholder="Add new title"></td>
+        <td>
+          <select id="newLanguage">
+            <option value="en">English</option>
+            <option value="zh-TW">Chinese (Traditional)</option>
+          </select>
+        </td>
+        <td><input type="text" id="newTranslation" placeholder="Add new translation"></td>
+        <td><input type="text" id="newCover" placeholder="Add cover URL"></td>
+        <td>
+          <button id="addAnime">Add</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
   <script>
-    document.getElementById('addAnimeForm').addEventListener('submit', function (event) {
-      event.preventDefault();
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let animes = [];
+    const progess = document.getElementById('progess');
 
-      const title = document.getElementById('title').value;
-      const cover = document.getElementById('cover').value;
+    document.getElementById('itemsPerPage').addEventListener('change', function () {
+      itemsPerPage = parseInt(this.value);
+      renderList();
+    });
 
-      fetch('/api/animes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title, cover })
-      })
-        .then(response => {
-          if (response.status === 201) {
-            alert('Anime added successfully!');
-            document.getElementById('addAnimeForm').reset();
-          } else {
+    document.getElementById('prevPage').addEventListener('click', function () {
+      if (currentPage > 1) {
+        currentPage--;
+        renderList();
+      }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', function () {
+      if (currentPage * itemsPerPage < animes.length) {
+        currentPage++;
+        renderList();
+      }
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+      renderList();
+    });
+
+    function clearNewAnimeInputs() {
+      document.getElementById('newTitle').value = '';
+      document.getElementById('newTranslation').value = '';
+      document.getElementById('newCover').value = '';
+    }
+
+    function isValidURL(string) {
+      try {
+        new URL(string);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function loadAnimes() {
+      fetch('/api/animes')
+        .then(response => response.json())
+        .then(data => {
+          animes = data;
+          renderList();
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    function renderList() {
+      const list = document.getElementById('animeList');
+      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      const filteredAnimes = animes.filter(anime => anime.title.toLowerCase().includes(searchQuery));
+      list.innerHTML = `
+        <tr>
+          <td><input type="text" id="newTitle" placeholder="Add new title"></td>
+          <td>
+            <select id="newLanguage">
+              <option value="en">English</option>
+              <option value="zh-TW">Chinese (Traditional)</option>
+            </select>
+          </td>
+          <td><input type="text" id="newTranslation" placeholder="Add new translation"></td>
+          <td><input type="text" id="newCover" placeholder="Add cover URL"></td>
+          <td>
+            <button id="addAnime">Add</button>
+          </td>
+        </tr>
+      `;
+
+      document.getElementById('addAnime').addEventListener('click', function () {
+        const title = document.getElementById('newTitle').value;
+        const language = document.getElementById('newLanguage').value;
+        const translation = document.getElementById('newTranslation').value;
+        const cover = document.getElementById('newCover').value;
+        console.log(title, language, translation, cover);
+        if (!title || !cover) {
+          alert('Title, and cover URL are required.');
+          return;
+        }
+
+        if (!isValidURL(cover)) {
+          alert('Invalid cover URL.');
+          return;
+        }
+
+        fetch('/api/animes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ title, cover })
+        })
+          .then(response => {
+            if (response.ok) {
+              return
+            } else {
+              throw new Error('Failed to add anime.');
+            }
+          })
+          .then(data => {
+            if (language.trim().length > 0 && translation.trim().length > 0) {
+              fetch('/api/translate', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, language })
+              })
+                .then(response => response.json())
+                .then(() => {
+                  alert('Anime added successfully!');
+                  clearNewAnimeInputs();
+                  loadAnimes();
+                });
+            } else {
+              alert('Anime added successfully!');
+              clearNewAnimeInputs();
+              loadAnimes();
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
             alert('Failed to add anime.');
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('Failed to add anime.');
+          });
+      });
+
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageAnimes = filteredAnimes.slice(start, end);
+      progess.textContent = `Showing ${start + 1} to ${end} of ${filteredAnimes.length} animes`;
+
+      pageAnimes.forEach(anime => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${anime.title}</td>
+          <td>
+            <select class="languageSelect">
+              <option value="en">English</option>
+              <option value="zh-TW">Chinese (Traditional)</option>
+            </select>
+          </td>
+          <td><input type="text" class="translationInput" value=""></td>
+          <td><input type="text" class="coverInput" value="${anime.cover}"></td>
+          <td>
+            <button class="saveButton">Save</button>
+            <button class="deleteButton">Delete</button>
+          </td>
+        `;
+        list.appendChild(row);
+
+        const languageSelect = row.querySelector('.languageSelect');
+        const translationInput = row.querySelector('.translationInput');
+        const coverInput = row.querySelector('.coverInput');
+        const saveButton = row.querySelector('.saveButton');
+        const deleteButton = row.querySelector('.deleteButton');
+
+        languageSelect.addEventListener('change', function () {
+          const language = this.value;
+          fetch(`/api/translate?title=${anime.title}&language=${language}`)
+            .then(response => response.json())
+            .then(data => {
+              console.log(data);
+              translationInput.value = data.title || '';
+            });
         });
-    });
 
-    document.getElementById('deleteAnimeForm').addEventListener('submit', function (event) {
-      event.preventDefault();
+        saveButton.addEventListener('click', function () {
+          const language = languageSelect.value;
+          const translation = translationInput.value;
+          const cover = coverInput.value;
 
-      const title = document.getElementById('deleteTitle').value;
-      console.log(title);
-
-      fetch(`/api/animes`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ title: title })
-      })
-        .then(response => {
-          if (response.status === 200) {
-            alert('Anime deleted successfully!');
-            document.getElementById('deleteAnimeForm').reset();
-          } else {
-            alert('Failed to delete anime.');
+          if (!isValidURL(cover)) {
+            alert('Invalid cover URL.');
+            return;
           }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('Failed to delete anime.');
+          fetch('/api/animes', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: anime.title, cover })
+          })
+            .then(response => {
+              if (response.ok) {
+                return;
+              } else {
+                console.error('Error:', response);
+                throw new Error('Failed to save cover URL.');
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Failed to save cover URL.');
+            });
+
+          fetch('/api/translate', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: anime.title, language, translation })
+          })
+            .then(response => {
+              if (response.ok) {
+                return;
+              } else if (response.status === 404) {
+                return fetch('/api/translate', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ title: anime.title, language, translation })
+                });
+              } else {
+                throw new Error('Failed to save translation.');
+              }
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Failed to save translation.');
+            });
         });
-    });
+
+        deleteButton.addEventListener('click', function () {
+          fetch('/api/animes', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title: anime.title })
+          })
+            .then(response => response.json())
+            .then(() => {
+              alert('Anime deleted successfully!');
+              loadAnimes();
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Failed to delete anime.');
+            });
+        });
+      });
+
+      document.getElementById('prevPage').disabled = currentPage === 1;
+      document.getElementById('nextPage').disabled = currentPage * itemsPerPage >= filteredAnimes.length;
+    }
+
+    loadAnimes();
   </script>
 </body>
 

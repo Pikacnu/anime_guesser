@@ -22,6 +22,7 @@
       margin: 0 auto;
       background-color: black;
       height: 50vh;
+      max-width: 80vw;
     }
 
     #nextButton {
@@ -33,6 +34,9 @@
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
+      width: 80vw;
+      overflow-wrap: anywhere;
+      overflow-y: auto;
     }
 
     button {
@@ -42,7 +46,7 @@
       background-color: #f0f0f0;
       border-radius: 5px;
       cursor: pointer;
-      white-space: nowrap;
+      white-space: break-spaces;
       color: black;
     }
 
@@ -71,42 +75,133 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 40vw;
+      width: 20vw;
       height: 25vh;
       padding: 20px;
       color: white;
       transform: translate(-50%, -50%);
-      background-color: rgba(0, 0, 0, 0.75);
+      background-color: rgba(0, 0, 0, 0.7);
       z-index: 100;
       border-radius: 10px;
       flex-direction: column;
       justify-content: center;
       align-items: center;
     }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .settings {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 10px;
+    }
+
+    .setting-container {
+      display: flex;
+      flex-direction: column;
+      margin: 4px;
+    }
+
+    .setting-container>* {
+      margin: 4px;
+    }
+
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      z-index: 100;
+    }
+
+    @media screen and (max-width: 600px) {
+      #endPopup {
+        width: 80vw;
+        height: 50vh;
+      }
+    }
+
+    #loadingText {
+      font-size: 24px;
+      color: transparent;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      animation: loading 2s infinite;
+    }
+
+    @keyframes loading {
+      0% {
+        color: transparent;
+      }
+
+      50% {
+        color: white;
+      }
+
+      100% {
+        color: transparent;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <canvas id="posterCanvas"></canvas>
-
-  <div class="optionContainer" id="optionContainer"></div>
-  <div id="endPopup" style="display: none;">
-    <h1>Game Over</h1>
-    <button id="restartButton">Restart</button>
-    <div class="displayContainer">
-      <p id="triedCount"></p>
-      <p id="openPercent"></p>
-      <p id="time"></p>
+  <div class="settings">
+    <button popovertarget="settings">Option</button>
+    <div popover id="settings">
+      <div class="setting-container">
+        <label for="rows">Rows:</label>
+        <input type="number" id="rows" value="10">
+        <label for="cols">Cols:</label>
+        <input type="number" id="cols" value="10">
+        <label for="questions">Questions:</label>
+        <input type="number" id="questions" value="20">
+        <label for="language">Language:</label>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="zh-TW">Chinese (Traditional)</option>
+          <option value="ja">Japanese</option>
+        </select>
+        <button id="startButton">Start</button>
+      </div>
     </div>
+  </div>
+
+  <div class="container">
+    <div id="loading">
+      <div id="loadingText">Loading...</div>
+    </div>
+    <canvas id="posterCanvas" style="opacity: 0;"></canvas>
+    <div class="optionContainer" id="optionContainer"></div>
+    <div id="endPopup" style="display: none;">
+      <button id="restartButton">Restart</button>
+      <div class="displayContainer">
+        <p id="triedCount"></p>
+        <p id="openPercent"></p>
+        <p id="time"></p>
+      </div>
+    </div>
+
   </div>
   <script>
     async function init() {
       const start = Date.now();
       const rows = $rows$;
       const cols = $cols$;
+      const language = new URLSearchParams(window.location.search).get('language') || '';
+      document.getElementById('language').value = language;
 
       const canvas = document.getElementById('posterCanvas');
       const optionContainer = document.getElementById('optionContainer');
+      const container = document.querySelector('.container');
+      const loading = document.getElementById('loading');
 
       const ctx = canvas.getContext('2d');
       const image = new Image();
@@ -114,8 +209,15 @@
       let cells = [];
 
       image.onload = () => {
+        container.hidden = false;
+        canvas.style.opacity = 1;
+        loading.style.display = 'none';
+
         canvas.width = image.width;
         canvas.height = image.height;
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const cellWidth = image.width / cols;
         const cellHeight = image.height / rows;
@@ -140,14 +242,14 @@
             const { row, col } = cells[currentIndex];
             ctx.drawImage(
               image,
-              col * cellWidth,
-              row * cellHeight,
-              cellWidth,
-              cellHeight,
-              col * cellWidth,
-              row * cellHeight,
-              cellWidth,
-              cellHeight
+              col * cellWidth - 1,
+              row * cellHeight - 1,
+              cellWidth + 2,
+              cellHeight + 2,
+              col * cellWidth - 1,
+              row * cellHeight - 1,
+              cellWidth + 2,
+              cellHeight + 2
             );
             currentIndex++;
           }
@@ -155,7 +257,7 @@
         InitOptions(drawNextCell);
       };
 
-      const response = await fetch('/data?count=$questions$');
+      const response = await fetch(`/data?count=$questions$${language ? `&language=${language}` : ''}`);
       const data = await response.json();
       const options = data.data
       const answer = data.answer;
@@ -193,6 +295,9 @@
               button.classList.add('correct');
               new Array(rows * cols).fill(0).forEach(() => drawNextCell());
               showEndPopup();
+              optionContainer.children.forEach((child) => {
+                child.disabled = true;
+              });
             } else {
               button.classList.add('wrong');
               button.disabled = true;
@@ -203,6 +308,15 @@
         });
       }
 
+      const startButton = document.getElementById('startButton');
+      startButton.addEventListener('click', () => {
+        const rows = document.getElementById('rows').value;
+        const cols = document.getElementById('cols').value;
+        const questions = document.getElementById('questions').value;
+        const language = document.getElementById('language').value;
+        const pathname = `/?rows=${rows}&cols=${cols}&questions=${questions}&language=${language}`;
+        window.location.pathname = pathname;
+      });
     }
     init();
   </script>

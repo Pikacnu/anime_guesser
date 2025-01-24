@@ -78,6 +78,24 @@
     - count: Number of anime records to return (default: 10)
   </pre>
 
+  <h3>GET /api/translate</h3>
+  <p>Returns the translation of an anime title in the specified language.</p>
+  <pre>
+    Parameters:
+    - title: The title of the anime to translate
+    - language: The language to translate the title into
+  </pre>
+
+  <h3>POST /api/translate</h3>
+  <p>Adds a new translation for an anime title in the specified language.</p>
+  <pre>
+    Body:
+    {
+      "title": "Anime Title",
+      "language": "Language Code"
+    }
+  </pre>
+
   <h3>GET /api/tool</h3>
   <p>Returns the tools HTML page.</p>
 
