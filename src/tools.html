@@ -71,6 +71,10 @@
     <label for="searchInput">Search:</label>
     <input type="text" id="searchInput" placeholder="Search by title">
     <p id="progess"></p>
+    <select name="translate_load" id="lang_of_load_trans">
+      <option value="en" selected>English</option>
+      <option value="zh-TW">Chinese (Traditional)</option>
+    </select>
     <button id="prevPage" disabled>Previous</button>
     <button id="nextPage">Next</button>
   </div>
@@ -107,6 +111,13 @@
     let itemsPerPage = 10;
     let animes = [];
     const progess = document.getElementById('progess');
+    const lang_of_load_trans = document.getElementById('lang_of_load_trans');
+    let default_load = lang_of_load_trans.value;
+
+    lang_of_load_trans.addEventListener('change', function () {
+      default_load = this.value;
+      renderList();
+    });
 
     document.getElementById('itemsPerPage').addEventListener('change', function () {
       itemsPerPage = parseInt(this.value);
@@ -167,8 +178,8 @@
           <td><input type="text" id="newTitle" placeholder="Add new title"></td>
           <td>
             <select id="newLanguage">
-              <option value="en">English</option>
-              <option value="zh-TW">Chinese (Traditional)</option>
+              <option value="en" ${default_load === 'en' ? 'selected' : ''}>English</option>
+              <option value="zh-TW" ${default_load === 'zh-TW' ? 'selected' : ''}>Chinese (Traditional)</option>
             </select>
           </td>
           <td><input type="text" id="newTranslation" placeholder="Add new translation"></td>
@@ -247,8 +258,8 @@
           <td>${anime.title}</td>
           <td>
             <select class="languageSelect">
-              <option value="en">English</option>
-              <option value="zh-TW">Chinese (Traditional)</option>
+              <option value="en" ${default_load === 'en' ? 'selected' : ''} >English</option>
+              <option value="zh-TW" ${default_load === 'zh-TW' ? 'selected' : ''}>Chinese (Traditional)</option>
             </select>
           </td>
           <td><input type="text" class="translationInput" value=""></td>
@@ -265,6 +276,12 @@
         const coverInput = row.querySelector('.coverInput');
         const saveButton = row.querySelector('.saveButton');
         const deleteButton = row.querySelector('.deleteButton');
+
+        fetch(`/api/translate?title=${anime.title}&language=${default_load}`)
+          .then(response => response.json())
+          .then(data => {
+            translationInput.value = data.title || '';
+          });
 
         languageSelect.addEventListener('change', function () {
           const language = this.value;
