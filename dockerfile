@@ -6,3 +6,4 @@ COPY bun.lockb /workdir/
 RUN bun install
 COPY . /workdir
 CMD ["bun", "start"]
+EXPOSE 8080 28080
