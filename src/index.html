@@ -314,8 +314,7 @@
         const cols = document.getElementById('cols').value;
         const questions = document.getElementById('questions').value;
         const language = document.getElementById('language').value;
-        const pathname = `/?rows=${rows}&cols=${cols}&questions=${questions}&language=${language}`;
-        window.location.pathname = pathname;
+        window.location.search = `?rows=${rows}&cols=${cols}&questions=${questions}&language=${language}`;
       });
     }
     init();
